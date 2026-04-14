@@ -1,3 +1,5 @@
+import { useScrollReveal } from '@/hooks/useScrollReveal';
+
 const STEPS = [
   { icon: '🖨️', label: 'Принтер', sub: 'Знаем настройки каждой модели' },
   { icon: '✂️', label: 'Слайсер', sub: 'Адаптируем под его термины' },
@@ -6,8 +8,9 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
+  const ref = useScrollReveal();
   return (
-    <div id="how" className="bg-surface2 border-t border-b border-border">
+    <div id="how" className="bg-surface2 border-t border-b border-border" ref={ref}>
       <section className="max-w-[1080px] mx-auto px-8 py-[4.5rem] max-md:px-6 max-md:py-12">
         <div className="font-mono text-[0.68rem] tracking-[0.15em] uppercase text-green mb-2">// принцип работы</div>
         <h2 className="font-mono text-[clamp(1.4rem,2.8vw,2rem)] font-bold text-text tracking-tight mb-1 leading-tight">Как работает «ПервыйСлой»</h2>

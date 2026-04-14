@@ -1,6 +1,9 @@
+import { useScrollReveal } from '@/hooks/useScrollReveal';
+
 export function Hero() {
+  const ref = useScrollReveal(0.1);
   return (
-    <div className="min-h-[88vh] flex items-center px-8 py-24 max-w-[1200px] mx-auto gap-16 max-md:flex-col max-md:px-6 max-md:py-16 max-md:gap-10">
+    <div ref={ref} className="min-h-[88vh] flex items-center px-8 py-24 max-w-[1200px] mx-auto gap-16 max-md:flex-col max-md:px-6 max-md:py-16 max-md:gap-10">
       <div className="flex-1 max-w-[600px]">
         <div className="inline-flex items-center gap-1.5 bg-green-glow border border-green/30 rounded-full px-3 py-1 font-mono text-[0.68rem] text-green tracking-widest uppercase mb-6">
           <span className="w-1.5 h-1.5 bg-green rounded-full animate-[pulse-dot_2s_infinite]" />
