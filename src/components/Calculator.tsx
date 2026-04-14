@@ -95,7 +95,7 @@ export function Calculator({ printer, slicer, filament, stlInfo, qualityBalance,
           <SectionLabel>// шаг 5 — баланс</SectionLabel>
           <h2 className="font-mono text-[clamp(1.4rem,2.8vw,2rem)] font-bold text-text tracking-tight mb-1 leading-tight">Качество ↔ Скорость</h2>
           <Divider />
-          <div className="bg-surface3 border border-border rounded-[10px] p-6 max-w-[500px]">
+          <div className="bg-surface3 border border-border rounded-[10px] p-6">
             <div className="flex justify-between text-[0.72rem] font-mono text-text3 mb-3">
               <span>🎯 Качество</span>
               <span>🚀 Скорость</span>
