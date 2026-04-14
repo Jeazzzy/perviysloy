@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback } from 'react';
-import { type StlInfo, parseSTL } from '@/data/calculator-data';
+import { analyzeStlFile, createNonStlInfo, type StlInfo } from '@/lib/model-analysis';
 import * as THREE from 'three';
 import { ModelViewer } from './ModelViewer';
 
@@ -20,46 +20,11 @@ export function StlUpload({ onStlLoaded, stlInfo }: StlUploadProps) {
   const [error, setError] = useState<string | null>(null);
   const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
 
-  const buildGeometryFromSTL = useCallback((buf: ArrayBuffer) => {
-    const bytes = new Uint8Array(buf);
-    let isBin = false;
-    let triangles = 0;
-    if (bytes.length > 84) {
-      const cnt = new DataView(buf).getUint32(80, true);
-      if (80 + 4 + cnt * 50 === bytes.length) { triangles = cnt; isBin = true; }
-    }
-
-    if (isBin && triangles > 0) {
-      const dv = new DataView(buf);
-      const positions = new Float32Array(triangles * 9);
-      const normals = new Float32Array(triangles * 9);
-      for (let i = 0; i < triangles; i++) {
-        const o = 84 + i * 50;
-        const nx = dv.getFloat32(o, true);
-        const ny = dv.getFloat32(o + 4, true);
-        const nz = dv.getFloat32(o + 8, true);
-        for (let v = 0; v < 3; v++) {
-          const vo = o + 12 + v * 12;
-          positions[i * 9 + v * 3] = dv.getFloat32(vo, true);
-          positions[i * 9 + v * 3 + 1] = dv.getFloat32(vo + 4, true);
-          positions[i * 9 + v * 3 + 2] = dv.getFloat32(vo + 8, true);
-          normals[i * 9 + v * 3] = nx;
-          normals[i * 9 + v * 3 + 1] = ny;
-          normals[i * 9 + v * 3 + 2] = nz;
-        }
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-      return geo;
-    }
-    return null;
-  }, []);
-
   const handleFile = useCallback((file: File) => {
     const ext = getExtension(file.name);
     if (!ACCEPTED_EXTENSIONS.includes(ext)) {
       setError(`Формат «${ext}» не поддерживается. Допустимые: ${ACCEPTED_EXTENSIONS.join(', ')}`);
+      setGeometry(null);
       return;
     }
     setError(null);
@@ -67,20 +32,18 @@ export function StlUpload({ onStlLoaded, stlInfo }: StlUploadProps) {
     const r = new FileReader();
     r.onload = (ev) => {
       if (ev.target?.result instanceof ArrayBuffer) {
-        const info = parseSTL(ev.target.result, file.name, file.size);
-        onStlLoaded(info);
-
         if (ext === '.stl') {
-          const geo = buildGeometryFromSTL(ev.target.result);
-          setGeometry(geo);
+          const { geometry: parsedGeometry, info } = analyzeStlFile(ev.target.result, file.name, file.size);
+          onStlLoaded(info);
+          setGeometry(parsedGeometry);
         } else {
-          // For 3MF/OBJ/AMF we parse metadata but can't render in 3D without dedicated parsers
+          onStlLoaded(createNonStlInfo(file.name, file.size, ext));
           setGeometry(null);
         }
       }
     };
     r.readAsArrayBuffer(file);
-  }, [onStlLoaded, buildGeometryFromSTL]);
+  }, [onStlLoaded]);
 
   return (
     <div>
@@ -119,9 +82,15 @@ export function StlUpload({ onStlLoaded, stlInfo }: StlUploadProps) {
             <span>{(stlInfo.size / 1024).toFixed(0)} КБ</span>
             {stlInfo.bbox && <span>{stlInfo.bbox.x} × {stlInfo.bbox.y} × {stlInfo.bbox.z} мм</span>}
           </div>
-          {stlInfo.needsSupports && (
-            <div className="bg-[hsl(var(--red)/0.1)] border border-red/30 rounded-md px-3 py-2 mb-2 text-red text-[0.72rem]">
-              ⚠️ Рекомендуются поддержки — {stlInfo.overhangPercent}% граней с нависаниями (&gt;60°)
+          {stlInfo.bbox && (
+            <div className={`rounded-md px-3 py-2 mb-2 text-[0.72rem] border ${
+              stlInfo.needsSupports
+                ? 'bg-[hsl(var(--red)/0.1)] border-red/30 text-red'
+                : 'bg-green-glow border-green/30 text-green'
+            }`}>
+              {stlInfo.needsSupports
+                ? `⚠️ Рекомендуются поддержки — обнаружено около ${stlInfo.overhangPercent}% рисковых граней выше основания`
+                : `✅ Поддержки, скорее всего, не нужны — критичных нависаний почти нет (${stlInfo.overhangPercent}%)`}
             </div>
           )}
           <div className="text-purple text-[0.72rem] leading-7">
