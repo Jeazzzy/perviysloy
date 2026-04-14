@@ -50,17 +50,20 @@ export function ProblemsModal({ open, onClose }: ProblemsModalProps) {
             return (
               <div
                 key={i}
-                onClick={() => toggleItem(i)}
-                className={`bg-surface3 border rounded-[10px] p-4 cursor-pointer transition-colors ${isOpen ? 'border-orange/45' : 'border-border hover:border-orange/30 hover:bg-surface4'}`}
+                className={`bg-surface3 border rounded-[10px] overflow-hidden transition-colors ${isOpen ? 'border-orange/45' : 'border-border hover:border-orange/30 hover:bg-surface4'}`}
               >
-                <div className="flex items-center gap-2.5">
+                {/* Only this header area toggles */}
+                <div
+                  onClick={() => toggleItem(i)}
+                  className="flex items-center gap-2.5 p-4 cursor-pointer"
+                >
                   <div className="text-lg shrink-0 w-[26px] text-center">{p.icon}</div>
                   <div className="font-mono text-[0.82rem] font-bold text-text flex-1">{p.name}</div>
                   <div className="text-[0.62rem] font-mono px-2 py-0.5 rounded bg-orange-glow border border-orange/30 text-orange whitespace-nowrap">{p.tag}</div>
                   <div className={`text-[0.65rem] text-text3 transition-transform shrink-0 ml-1 ${isOpen ? 'rotate-90' : ''}`}>▶</div>
                 </div>
                 {isOpen && (
-                  <div className="mt-4 border-t border-border pt-4" onClick={(e) => e.stopPropagation()}>
+                  <div className="px-4 pb-4 border-t border-border pt-4">
                     <div className="text-[0.8rem] text-text3 leading-relaxed mb-3">{p.desc}</div>
                     <div className="font-mono text-[0.7rem] text-green uppercase tracking-wider mb-2">Как исправить:</div>
                     <ul className="flex flex-col gap-1">
