@@ -21,6 +21,7 @@ export function Results({ visible, subtitle, stlNotes, params }: ResultsProps) {
   const [feedbackState, setFeedbackState] = useState<'ask' | 'yes' | 'no'>('ask');
   const [pickedProblems, setPickedProblems] = useState<Set<string>>(new Set());
   const [recalcResult, setRecalcResult] = useState<typeof FIXES[string][] | null>(null);
+  const sectionRef = useScrollReveal();
 
   if (!visible) return null;
 
