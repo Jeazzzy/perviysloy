@@ -162,45 +162,71 @@ export interface StlInfo {
   tall: boolean;
   thin: boolean;
   complex: boolean;
+  needsSupports: boolean;
+  overhangPercent: number;
 }
 
 export function parseSTL(buf: ArrayBuffer, name: string, size: number): StlInfo {
   const bytes = new Uint8Array(buf);
   let triangles = 0;
   let isBin = false;
+
   if (bytes.length > 84) {
-    const cnt = new DataView(buf).getUint32(84, true);
+    const cnt = new DataView(buf).getUint32(80, true);
     if (80 + 4 + cnt * 50 === bytes.length) { triangles = cnt; isBin = true; }
   }
   if (!isBin) {
-    const m = new TextDecoder().decode(bytes).match(/facet\s+normal/g);
+    const text = new TextDecoder().decode(bytes);
+    const m = text.match(/facet\s+normal/gi);
     triangles = m ? m.length : 0;
   }
+
   let bbox: StlInfo['bbox'] = null;
+  let overhangCount = 0;
+  let needsSupports = false;
+
   if (isBin && triangles > 0) {
     const dv = new DataView(buf);
     let mnX = 1e9, mnY = 1e9, mnZ = 1e9, mxX = -1e9, mxY = -1e9, mxZ = -1e9;
-    const lim = Math.min(triangles, 40000);
+    const lim = Math.min(triangles, 100000);
     for (let i = 0; i < lim; i++) {
-      const o = 84 + i * 50 + 12;
+      const base = 84 + i * 50;
+      // Normal vector
+      const nz = dv.getFloat32(base + 8, true);
+      // Overhang: normal pointing downward (nz < -0.5 ≈ >60° overhang)
+      if (nz < -0.5) overhangCount++;
+
+      const vo = base + 12;
       for (let v = 0; v < 3; v++) {
-        const x = dv.getFloat32(o + v * 12, true);
-        const y = dv.getFloat32(o + v * 12 + 4, true);
-        const z = dv.getFloat32(o + v * 12 + 8, true);
+        const x = dv.getFloat32(vo + v * 12, true);
+        const y = dv.getFloat32(vo + v * 12 + 4, true);
+        const z = dv.getFloat32(vo + v * 12 + 8, true);
         if (x < mnX) mnX = x; if (x > mxX) mxX = x;
         if (y < mnY) mnY = y; if (y > mxY) mxY = y;
         if (z < mnZ) mnZ = z; if (z > mxZ) mxZ = z;
       }
     }
     bbox = { x: (mxX - mnX).toFixed(1), y: (mxY - mnY).toFixed(1), z: (mxZ - mnZ).toFixed(1) };
+    needsSupports = overhangCount / lim > 0.05;
   }
+
+  const overhangPercent = triangles > 0 ? Math.round((overhangCount / Math.min(triangles, 100000)) * 100) : 0;
   const h = bbox ? parseFloat(bbox.z) : null;
   const thin = bbox ? Math.min(parseFloat(bbox.x), parseFloat(bbox.y)) < 8 : false;
   const tall = !!(h && h > 80);
+  const complex = triangles > 50000;
+
   const hints: string[] = [];
+  if (needsSupports) hints.push(`⚠️ Обнаружены нависания (${overhangPercent}% граней) → включи поддержки в слайсере`);
   if (tall) hints.push('Высокая деталь (>80 мм) → скорость −10%');
   if (thin) hints.push('Тонкие стенки (<8 мм) → поток +2%');
-  if (triangles > 50000) hints.push('Сложная геометрия → вероятны нависания, включи поддержки');
+  if (complex) hints.push('Сложная геометрия → вероятны нависания, включи поддержки');
+  if (overhangPercent > 20) hints.push('Много нависающих граней → используй Tree Supports для экономии пластика');
+  if (bbox) {
+    const vol = parseFloat(bbox.x) * parseFloat(bbox.y) * parseFloat(bbox.z);
+    if (vol > 500000) hints.push('Крупная деталь → рассмотри разделение на части для надёжности');
+  }
   if (!hints.length) hints.push('Геометрия простая — стандартные параметры подойдут');
-  return { name, size, triangles, bbox, hints, tall, thin, complex: triangles > 50000 };
+
+  return { name, size, triangles, bbox, hints, tall, thin, complex, needsSupports, overhangPercent };
 }

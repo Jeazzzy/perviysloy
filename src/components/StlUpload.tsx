@@ -25,7 +25,7 @@ export function StlUpload({ onStlLoaded, stlInfo }: StlUploadProps) {
     let isBin = false;
     let triangles = 0;
     if (bytes.length > 84) {
-      const cnt = new DataView(buf).getUint32(84, true);
+      const cnt = new DataView(buf).getUint32(80, true);
       if (80 + 4 + cnt * 50 === bytes.length) { triangles = cnt; isBin = true; }
     }
 
@@ -119,6 +119,11 @@ export function StlUpload({ onStlLoaded, stlInfo }: StlUploadProps) {
             <span>{(stlInfo.size / 1024).toFixed(0)} КБ</span>
             {stlInfo.bbox && <span>{stlInfo.bbox.x} × {stlInfo.bbox.y} × {stlInfo.bbox.z} мм</span>}
           </div>
+          {stlInfo.needsSupports && (
+            <div className="bg-[hsl(var(--red)/0.1)] border border-red/30 rounded-md px-3 py-2 mb-2 text-red text-[0.72rem]">
+              ⚠️ Рекомендуются поддержки — {stlInfo.overhangPercent}% граней с нависаниями (&gt;60°)
+            </div>
+          )}
           <div className="text-purple text-[0.72rem] leading-7">
             {stlInfo.hints.map((h, i) => <div key={i}>→ {h}</div>)}
           </div>
