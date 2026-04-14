@@ -1,7 +1,8 @@
 import { ChoiceCard } from './ChoiceCard';
 import { StlUpload } from './StlUpload';
-import { PRINTER_OPTIONS, SLICER_OPTIONS, FILAMENT_OPTIONS, type StlInfo } from '@/data/calculator-data';
+import { PRINTER_OPTIONS, SLICER_OPTIONS, FILAMENT_OPTIONS } from '@/data/calculator-data';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
+import { type StlInfo } from '@/lib/model-analysis';
 
 interface CalculatorProps {
   printer: string | null;

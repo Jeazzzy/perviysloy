@@ -9,7 +9,8 @@ import { HowItWorks } from "@/components/HowItWorks";
 import { Contact } from "@/components/Contact";
 import { Footer } from "@/components/Footer";
 import { ProblemsModal } from "@/components/ProblemsModal";
-import { PRESETS, PRINTERS, PNAMES, SNAMES, type StlInfo } from "@/data/calculator-data";
+import { PRESETS, PRINTERS, PNAMES, SNAMES } from "@/data/calculator-data";
+import { type StlInfo } from "@/lib/model-analysis";
 
 export const Route = createFileRoute("/")({
   component: Index,
