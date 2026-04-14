@@ -33,18 +33,74 @@ export function Tips() {
   const [expandedTip, setExpandedTip] = useState<number | null>(null);
   const sectionRef = useScrollReveal();
 
+  const isExpanded = expandedTip !== null;
+
   return (
     <div id="tips" className="border-t border-border" ref={sectionRef}>
       <section className="max-w-[1080px] mx-auto px-8 py-[4.5rem] max-md:px-6 max-md:py-12">
         <div className="font-mono text-[0.68rem] tracking-[0.15em] uppercase text-green mb-2">// объяснения</div>
         <h2 className="font-mono text-[clamp(1.4rem,2.8vw,2rem)] font-bold text-text tracking-tight mb-1 leading-tight">Почему именно такие параметры?</h2>
         <div className="w-12 h-0.5 bg-gradient-to-r from-green to-purple my-3 mb-8 rounded-sm" />
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-[18px]">
-          {TIPS.map((tip, i) => (
-            <div key={i} className="flex flex-col">
+
+        {/* Mini-icon row for non-expanded tips (visible only when one is expanded) */}
+        {isExpanded && (
+          <div className="flex gap-2 mb-4 animate-fade-in">
+            {TIPS.map((tip, i) => {
+              if (i === expandedTip) return null;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setExpandedTip(i)}
+                  className={`w-[42px] h-[42px] rounded-[8px] flex items-center justify-center text-[1rem] transition-all hover:scale-110 hover:border-green/30 ${
+                    tip.color === 'green' ? 'bg-green-glow border border-green/20' : 'bg-purple-glow border border-purple/20'
+                  }`}
+                  title={tip.title}
+                >
+                  {tip.icon}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Expanded article (full width) */}
+        {isExpanded && (
+          <div className="animate-fade-in">
+            <div
+              className="bg-surface2 border border-green/30 rounded-[10px] overflow-hidden"
+            >
               <div
-                className={`bg-surface2 border rounded-[10px] p-5 transition-all hover:border-green/20 hover:-translate-y-0.5 cursor-pointer ${expandedTip === i ? 'border-green/30' : 'border-border'}`}
-                onClick={() => setExpandedTip(expandedTip === i ? null : i)}
+                className="p-5 cursor-pointer flex items-center gap-3 hover:bg-surface3/50 transition-colors"
+                onClick={() => setExpandedTip(null)}
+              >
+                <div className={`w-[34px] h-[34px] rounded-[7px] flex items-center justify-center text-[0.95rem] shrink-0 ${
+                  TIPS[expandedTip].color === 'green' ? 'bg-green-glow border border-green/20' : 'bg-purple-glow border border-purple/20'
+                }`}>
+                  {TIPS[expandedTip].icon}
+                </div>
+                <div className="flex-1">
+                  <div className="font-mono text-[0.82rem] font-bold text-text">{TIPS[expandedTip].title}</div>
+                  <div className="text-[0.78rem] text-text3">{TIPS[expandedTip].text}</div>
+                </div>
+                <div className="font-mono text-[0.68rem] text-green shrink-0">▼ Скрыть</div>
+              </div>
+              <div className="border-t border-green/15 px-5 py-5 bg-surface3">
+                <div className="text-[0.8rem] text-text2 leading-relaxed whitespace-pre-line font-sans max-w-none">
+                  {TIPS[expandedTip].article}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Grid of cards (visible when nothing is expanded) */}
+        {!isExpanded && (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-[18px]">
+            {TIPS.map((tip, i) => (
+              <div
+                key={i}
+                className="bg-surface2 border border-border rounded-[10px] p-5 transition-all hover:border-green/20 hover:-translate-y-0.5 cursor-pointer"
+                onClick={() => setExpandedTip(i)}
               >
                 <div className={`w-[34px] h-[34px] rounded-[7px] flex items-center justify-center mb-3 text-[0.95rem] ${
                   tip.color === 'green' ? 'bg-green-glow border border-green/20' : 'bg-purple-glow border border-purple/20'
@@ -54,19 +110,12 @@ export function Tips() {
                 <div className="font-mono text-[0.82rem] font-bold text-text mb-1">{tip.title}</div>
                 <div className="text-[0.82rem] text-text3 leading-relaxed">{tip.text}</div>
                 <div className="mt-3 font-mono text-[0.68rem] text-green flex items-center gap-1">
-                  {expandedTip === i ? '▼ Скрыть статью' : '▶ Подробная статья'}
+                  ▶ Подробная статья
                 </div>
               </div>
-              {expandedTip === i && (
-                <div className="bg-surface3 border border-t-0 border-green/15 rounded-b-[10px] px-5 py-4 -mt-[10px] pt-6 animate-fade-in">
-                  <div className="text-[0.8rem] text-text2 leading-relaxed whitespace-pre-line font-sans">
-                    {tip.article}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
