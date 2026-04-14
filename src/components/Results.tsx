@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FIXES, PROBLEM_CHIPS } from '@/data/calculator-data';
+import { useScrollReveal } from '@/hooks/useScrollReveal';
 
 interface ParamResult {
   label: string;
@@ -37,7 +38,7 @@ export function Results({ visible, subtitle, stlNotes, params }: ResultsProps) {
   };
 
   return (
-    <div id="results" className="bg-background border-t border-border">
+    <div id="results" className="bg-background border-t border-border" ref={sectionRef}>
       <section className="max-w-[1080px] mx-auto px-8 py-16 max-md:px-6">
         <div className="font-mono text-[0.68rem] tracking-[0.15em] uppercase text-green mb-2">// результат</div>
         <h2 className="font-mono text-[clamp(1.4rem,2.8vw,2rem)] font-bold text-text tracking-tight mb-1 leading-tight">Рекомендуемые параметры</h2>
