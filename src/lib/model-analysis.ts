@@ -83,6 +83,77 @@ function buildHints({
   return hints;
 }
 
+// Orientation definitions: rotation axis + angle, label
+const ORIENTATIONS = [
+  { label: 'Текущая (как есть)', rx: 0, ry: 0, description: 'Без изменений — модель в исходной ориентации' },
+  { label: 'Повернуть на бок (X +90°)', rx: Math.PI / 2, ry: 0, description: 'Поворот на 90° вокруг оси X — ложится на переднюю грань' },
+  { label: 'Повернуть на бок (X −90°)', rx: -Math.PI / 2, ry: 0, description: 'Поворот на 90° вокруг оси X — ложится на заднюю грань' },
+  { label: 'Перевернуть (X 180°)', rx: Math.PI, ry: 0, description: 'Полный переворот — верх становится низом' },
+  { label: 'Повернуть боком (Y +90°)', rx: 0, ry: Math.PI / 2, description: 'Поворот на 90° вокруг оси Y — ложится на правую грань' },
+  { label: 'Повернуть боком (Y −90°)', rx: 0, ry: -Math.PI / 2, description: 'Поворот на 90° вокруг оси Y — ложится на левую грань' },
+];
+
+function analyzeOrientation(
+  positions: THREE.BufferAttribute | THREE.InterleavedBufferAttribute,
+  triangleCount: number,
+  sampleStep: number,
+  rx: number,
+  ry: number,
+): { overhangPercent: number; riskyAreaPercent: number } {
+  const rotMatrix = new THREE.Matrix4().makeRotationX(rx).multiply(new THREE.Matrix4().makeRotationY(ry));
+  const normalMatrix = new THREE.Matrix3().setFromMatrix4(rotMatrix);
+
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const ab = new THREE.Vector3(), ac = new THREE.Vector3(), normal = new THREE.Vector3();
+
+  // First pass: find bounding box in rotated frame
+  let minZ = Infinity, maxZ = -Infinity;
+  for (let fi = 0; fi < triangleCount; fi += sampleStep) {
+    const vi = fi * 3;
+    a.fromBufferAttribute(positions, vi).applyMatrix4(rotMatrix);
+    b.fromBufferAttribute(positions, vi + 1).applyMatrix4(rotMatrix);
+    c.fromBufferAttribute(positions, vi + 2).applyMatrix4(rotMatrix);
+    const lo = Math.min(a.z, b.z, c.z);
+    const hi = Math.max(a.z, b.z, c.z);
+    if (lo < minZ) minZ = lo;
+    if (hi > maxZ) maxZ = hi;
+  }
+
+  const height = maxZ - minZ;
+  const minBaseClearance = minZ + Math.max(SUPPORT_CLEARANCE_MM, height * SUPPORT_CLEARANCE_RATIO);
+
+  let analyzed = 0, riskyCount = 0, riskyArea = 0, totalArea = 0;
+
+  for (let fi = 0; fi < triangleCount; fi += sampleStep) {
+    const vi = fi * 3;
+    a.fromBufferAttribute(positions, vi).applyMatrix4(rotMatrix);
+    b.fromBufferAttribute(positions, vi + 1).applyMatrix4(rotMatrix);
+    c.fromBufferAttribute(positions, vi + 2).applyMatrix4(rotMatrix);
+
+    ab.subVectors(b, a);
+    ac.subVectors(c, a);
+    normal.crossVectors(ab, ac);
+    const dblArea = normal.length();
+    if (!dblArea) continue;
+
+    const area = dblArea * 0.5;
+    totalArea += area;
+    analyzed++;
+
+    normal.normalize();
+    const cz = (a.z + b.z + c.z) / 3;
+    if (normal.z < SUPPORT_ANGLE_NORMAL_Z && cz > minBaseClearance) {
+      riskyCount++;
+      riskyArea += area;
+    }
+  }
+
+  return {
+    overhangPercent: analyzed ? Math.round((riskyCount / analyzed) * 100) : 0,
+    riskyAreaPercent: totalArea ? Math.round((riskyArea / totalArea) * 100) : 0,
+  };
+}
+
 export function analyzeStlFile(buf: ArrayBuffer, name: string, size: number): { geometry: THREE.BufferGeometry | null; info: StlInfo } {
   const loader = new STLLoader();
 
@@ -115,71 +186,58 @@ export function analyzeStlFile(buf: ArrayBuffer, name: string, size: number): { 
     };
 
     const height = bbox3.max.z - bbox3.min.z;
-    const minBaseClearance = bbox3.min.z + Math.max(SUPPORT_CLEARANCE_MM, height * SUPPORT_CLEARANCE_RATIO);
     const sampleStep = triangleCount > MAX_ANALYZED_TRIANGLES ? Math.ceil(triangleCount / MAX_ANALYZED_TRIANGLES) : 1;
 
-    const a = new THREE.Vector3();
-    const b = new THREE.Vector3();
-    const c = new THREE.Vector3();
-    const ab = new THREE.Vector3();
-    const ac = new THREE.Vector3();
-    const normal = new THREE.Vector3();
+    // Analyze all orientations
+    const orientationResults = ORIENTATIONS.map((o) => {
+      const result = analyzeOrientation(positions, triangleCount, sampleStep, o.rx, o.ry);
+      return { ...o, ...result, needsSupports: result.riskyAreaPercent >= SUPPORT_AREA_THRESHOLD };
+    });
 
-    let analyzedTriangles = 0;
-    let riskyTriangles = 0;
-    let riskyArea = 0;
-    let totalArea = 0;
+    // Current orientation = first one
+    const current = orientationResults[0];
+    const bestOrientation = orientationResults.reduce((best, o) => o.riskyAreaPercent < best.riskyAreaPercent ? o : best, orientationResults[0]);
 
-    for (let faceIndex = 0; faceIndex < triangleCount; faceIndex += sampleStep) {
-      const vertexIndex = faceIndex * 3;
-
-      a.fromBufferAttribute(positions, vertexIndex);
-      b.fromBufferAttribute(positions, vertexIndex + 1);
-      c.fromBufferAttribute(positions, vertexIndex + 2);
-
-      ab.subVectors(b, a);
-      ac.subVectors(c, a);
-      normal.crossVectors(ab, ac);
-
-      const doubleArea = normal.length();
-      if (!doubleArea) continue;
-
-      const area = doubleArea * 0.5;
-      totalArea += area;
-      analyzedTriangles += 1;
-
-      normal.normalize();
-      const centroidZ = (a.z + b.z + c.z) / 3;
-      const isRiskyOverhang = normal.z < SUPPORT_ANGLE_NORMAL_Z && centroidZ > minBaseClearance;
-
-      if (isRiskyOverhang) {
-        riskyTriangles += 1;
-        riskyArea += area;
-      }
-    }
+    // Build orientation tips
+    const orientations: OrientationTip[] = orientationResults.map((o) => ({
+      label: o.label,
+      description: o.description,
+      overhangPercent: o.overhangPercent,
+      riskyAreaPercent: o.riskyAreaPercent,
+      needsSupports: o.needsSupports,
+      isBest: o === bestOrientation,
+    }));
 
     normalizedGeometry.dispose();
 
-    const overhangPercent = analyzedTriangles ? Math.round((riskyTriangles / analyzedTriangles) * 100) : 0;
-    const riskyAreaPercent = totalArea ? Math.round((riskyArea / totalArea) * 100) : 0;
     const tall = height > 80;
     const thin = Math.min(parseFloat(bbox.x), parseFloat(bbox.y)) < 8;
     const complex = triangleCount > 50000;
-    const needsSupports = riskyAreaPercent >= SUPPORT_AREA_THRESHOLD;
+
+    const hints = buildHints({
+      bbox, complex,
+      needsSupports: current.needsSupports,
+      overhangPercent: current.overhangPercent,
+      riskyAreaPercent: current.riskyAreaPercent,
+      tall, thin,
+    });
+
+    // Add orientation hint if rotating helps
+    if (current.needsSupports && !bestOrientation.needsSupports) {
+      hints.unshift(`🔄 Попробуй «${bestOrientation.label}» — нависания снизятся с ${current.riskyAreaPercent}% до ${bestOrientation.riskyAreaPercent}%, поддержки не понадобятся`);
+    } else if (current.needsSupports && bestOrientation.riskyAreaPercent < current.riskyAreaPercent) {
+      hints.unshift(`🔄 Попробуй «${bestOrientation.label}» — нависания снизятся с ${current.riskyAreaPercent}% до ${bestOrientation.riskyAreaPercent}%`);
+    }
 
     return {
       geometry,
       info: {
-        name,
-        size,
+        name, size,
         triangles: triangleCount,
-        bbox,
-        hints: buildHints({ bbox, complex, needsSupports, overhangPercent, riskyAreaPercent, tall, thin }),
-        tall,
-        thin,
-        complex,
-        needsSupports,
-        overhangPercent,
+        bbox, hints, tall, thin, complex,
+        needsSupports: current.needsSupports,
+        overhangPercent: current.overhangPercent,
+        orientations,
       },
     };
   } catch {
@@ -192,30 +250,17 @@ export function analyzeStlFile(buf: ArrayBuffer, name: string, size: number): { 
 
 export function createFallbackInfo(name: string, size: number, hint: string): StlInfo {
   return {
-    name,
-    size,
-    triangles: 0,
-    bbox: null,
-    hints: [hint],
-    tall: false,
-    thin: false,
-    complex: false,
-    needsSupports: false,
-    overhangPercent: 0,
+    name, size, triangles: 0, bbox: null, hints: [hint],
+    tall: false, thin: false, complex: false, needsSupports: false, overhangPercent: 0,
+    orientations: [],
   };
 }
 
 export function createNonStlInfo(name: string, size: number, extension: string): StlInfo {
   return {
-    name,
-    size,
-    triangles: 0,
-    bbox: null,
+    name, size, triangles: 0, bbox: null,
     hints: [`Файл ${extension.toUpperCase()} загружен. Геоанализ и 3D-превью сейчас доступны для STL.`],
-    tall: false,
-    thin: false,
-    complex: false,
-    needsSupports: false,
-    overhangPercent: 0,
+    tall: false, thin: false, complex: false, needsSupports: false, overhangPercent: 0,
+    orientations: [],
   };
 }
