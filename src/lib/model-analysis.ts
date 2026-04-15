@@ -1,6 +1,15 @@
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 
+export interface OrientationTip {
+  label: string;
+  description: string;
+  overhangPercent: number;
+  riskyAreaPercent: number;
+  needsSupports: boolean;
+  isBest: boolean;
+}
+
 export interface StlInfo {
   name: string;
   size: number;
@@ -12,6 +21,7 @@ export interface StlInfo {
   complex: boolean;
   needsSupports: boolean;
   overhangPercent: number;
+  orientations: OrientationTip[];
 }
 
 const MAX_ANALYZED_TRIANGLES = 200000;
