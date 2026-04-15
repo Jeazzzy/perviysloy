@@ -93,6 +93,31 @@ export function StlUpload({ onStlLoaded, stlInfo }: StlUploadProps) {
                 : `✅ Поддержки, скорее всего, не нужны — критичных нависаний почти нет (${stlInfo.overhangPercent}%)`}
             </div>
           )}
+          {stlInfo.orientations.length > 0 && (
+            <div className="mt-3 mb-2">
+              <div className="text-text2 font-bold text-[0.74rem] mb-2">🔄 Анализ ориентации на столе:</div>
+              <div className="grid gap-1.5">
+                {stlInfo.orientations.map((o, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-center justify-between rounded-md px-3 py-1.5 text-[0.7rem] border transition-colors ${
+                      o.isBest
+                        ? 'border-green/40 bg-green-glow text-green font-bold'
+                        : 'border-border bg-surface2 text-text3'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {o.isBest && <span>⭐</span>}
+                      {o.label}
+                    </span>
+                    <span className={`${o.needsSupports ? 'text-red' : 'text-green'}`}>
+                      {o.riskyAreaPercent}% нависаний {o.needsSupports ? '→ нужны поддержки' : '→ ОК'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="text-purple text-[0.72rem] leading-7">
             {stlInfo.hints.map((h, i) => <div key={i}>→ {h}</div>)}
           </div>
