@@ -31,14 +31,18 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Первый Слой" },
+      { name: "description", content: "Твой успешный первый слой на 3D-принтере" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Первый Слой" },
+      { property: "og:description", content: "Твой успешный первый слой на 3D-принтере" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Первый Слой" },
+      { name: "twitter:description", content: "Твой успешный первый слой на 3D-принтере" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8ed3dc24-90a6-4791-af7d-fd6be4dd5117/id-preview-d5322b43--2ec8a038-4c0d-4460-a704-ba91c8cfa5ab.lovable.app-1776235345272.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8ed3dc24-90a6-4791-af7d-fd6be4dd5117/id-preview-d5322b43--2ec8a038-4c0d-4460-a704-ba91c8cfa5ab.lovable.app-1776235345272.png" },
     ],
     links: [
       {
