@@ -132,11 +132,17 @@ body::before {
   content: '';
   position: fixed;
   inset: 0;
-  background-image: linear-gradient(oklch(0.78 0.19 155 / 2.5%) 1px, transparent 1px),
-    linear-gradient(90deg, oklch(0.78 0.19 155 / 2.5%) 1px, transparent 1px);
+  background-image: linear-gradient(oklch(0.78 0.19 155 / 8%) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.78 0.19 155 / 8%) 1px, transparent 1px);
   background-size: 44px 44px;
   pointer-events: none;
   z-index: 0;
+}
+
+/* Keep content above the grid overlay */
+body > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Animations */
