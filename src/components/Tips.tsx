@@ -110,8 +110,8 @@ export function Tips() {
                 <div className="font-mono text-[0.68rem] text-green shrink-0">▼ Скрыть</div>
               </div>
               <div className="border-t border-green/15 px-5 py-5 bg-surface3">
-                <div className="text-[0.8rem] text-text2 leading-relaxed whitespace-pre-line font-sans max-w-none">
-                  {TIPS[expandedTip].article}
+                <div className="text-[0.8rem] text-text2 leading-relaxed font-sans max-w-none">
+                  {renderMarkdown(TIPS[expandedTip].article)}
                 </div>
               </div>
             </div>
