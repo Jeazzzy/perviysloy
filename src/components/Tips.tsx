@@ -30,6 +30,30 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 
+function renderMarkdown(text: string): ReactNode[] {
+  const lines = text.split('\n');
+  const nodes: ReactNode[] = [];
+  lines.forEach((line, i) => {
+    const parts: ReactNode[] = [];
+    const regex = /\*\*(.*?)\*\*/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(line.slice(lastIndex, match.index));
+      }
+      parts.push(<strong key={`b-${i}-${match.index}`} className="text-text font-bold">{match[1]}</strong>);
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < line.length) {
+      parts.push(line.slice(lastIndex));
+    }
+    nodes.push(<span key={`l-${i}`}>{parts.length ? parts : line}</span>);
+    if (i < lines.length - 1) nodes.push(<br key={`br-${i}`} />);
+  });
+  return nodes;
+}
+
 export function Tips() {
   const [expandedTip, setExpandedTip] = useState<number | null>(null);
   const sectionRef = useScrollReveal();
