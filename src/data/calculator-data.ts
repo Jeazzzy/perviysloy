@@ -55,6 +55,9 @@ export const PRINTERS: Record<string, { speed: number; layer: number; fs: number
   ender3pro: { speed: 55, layer: 0.2, fs: 22 },
   megax: { speed: 60, layer: 0.2, fs: 24 },
   prusa: { speed: 60, layer: 0.15, fs: 25 },
+  bambuh2d: { speed: 250, layer: 0.2, fs: 50 },
+  k1: { speed: 200, layer: 0.2, fs: 50 },
+  k1max: { speed: 200, layer: 0.2, fs: 50 },
   other: { speed: 45, layer: 0.2, fs: 18 }
 };
 
@@ -63,6 +66,9 @@ export const PNAMES: Record<string, string> = {
   ender3pro: 'Ender-3 Pro',
   megax: 'Anycubic Mega-X',
   prusa: 'Prusa i3 Mk3',
+  bambuh2d: 'Bambu Lab H2D',
+  k1: 'Creality K1',
+  k1max: 'Creality K1 Max',
   other: 'Универсальный'
 };
 
@@ -70,6 +76,7 @@ export const SNAMES: Record<string, string> = {
   cura: 'Cura',
   prusaslicer: 'PrusaSlicer',
   bambu: 'Bambu Studio',
+  crealityprint: 'Creality Print',
   other: 'Другой слайсер'
 };
 
@@ -78,6 +85,9 @@ export const PRINTER_OPTIONS = [
   { value: 'ender3pro', icon: '🖨️', name: 'Ender-3 Pro', sub: 'Creality · FDM' },
   { value: 'megax', icon: '🖨️', name: 'Anycubic Mega-X', sub: 'Anycubic · FDM' },
   { value: 'prusa', icon: '🖨️', name: 'Prusa i3 Mk3', sub: 'Prusa Research' },
+  { value: 'bambuh2d', icon: '🖨️', name: 'Bambu Lab H2D', sub: 'Bambu Lab · CoreXY' },
+  { value: 'k1', icon: '🖨️', name: 'Creality K1', sub: 'Creality · CoreXY' },
+  { value: 'k1max', icon: '🖨️', name: 'Creality K1 Max', sub: 'Creality · CoreXY' },
   { value: 'other', icon: '⚙️', name: 'Другой принтер', sub: 'Общие настройки' },
 ];
 
@@ -85,6 +95,7 @@ export const SLICER_OPTIONS = [
   { value: 'cura', icon: '🔷', name: 'Cura', sub: 'Ultimaker · Бесплатно' },
   { value: 'prusaslicer', icon: '🟣', name: 'PrusaSlicer', sub: 'Prusa Research' },
   { value: 'bambu', icon: '🟢', name: 'Bambu Studio', sub: 'Bambu Lab' },
+  { value: 'crealityprint', icon: '🟠', name: 'Creality Print', sub: 'Creality' },
   { value: 'other', icon: '📦', name: 'Другой', sub: 'Общие рекомендации' },
 ];
 
